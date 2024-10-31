@@ -39,10 +39,13 @@ export default function Login() {
         // Redirect based on user role
         const response = await fetch('/api/auth/session');
         const session = await response.json();
+        console.log("login",session.user.role)
         
         if (session?.user?.role === 'admin') {
+          console.log("navigate to admin")
           router.push("/admin/dashboard");
         } else {
+          console.log("navigate to user")
           router.push("/dashboard");
         }
         router.refresh();
