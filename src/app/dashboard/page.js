@@ -13,14 +13,30 @@ export default function EventsPage() {
     success: false,
     message: "",
   });
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+     fetchUserSession();
     if (activeTab === "events") {
       fetchEvents();
     } else {
       fetchMyBookings();
     }
   }, [activeTab]);
+
+
+    const fetchUserSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok) {
+          throw new Error("Failed to fetch user session");
+        }
+        const data = await res.json();
+        setUser(data.user);
+      } catch (err) {
+        setError("Failed to fetch session data");
+      }
+    };
 
   const fetchEvents = async () => {
     try {
@@ -61,6 +77,17 @@ export default function EventsPage() {
     }
   };
 
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      router.push("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
 // console.log("Bookings",myBookings)
 
   const handleBooking = async () => {
@@ -153,9 +180,23 @@ export default function EventsPage() {
       </div>
     );
   }
-console.log("myBookings",myBookings)
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* User Info and Logout */}
+      {user && (
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-lg font-semibold">
+            Welcome, {user.name || user.email}!
+          </div>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Logout
+          </button>
+        </div>
+      )}
       {/* Tabs */}
       <div className="flex mb-8 border-b">
         <button
@@ -246,7 +287,6 @@ console.log("myBookings",myBookings)
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold mb-2">
-                    {console.log("check",booking._id)}
                       {booking.event?.title}
                     </h3>
                     <p className="text-gray-600 mb-4">

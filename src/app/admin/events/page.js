@@ -128,8 +128,25 @@ export default function AdminEvents() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* User Information and Logout Button */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Events Management</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Events Management</h1>
+          {session && (
+            <p className="text-gray-600">
+              Logged in as {session.user.name} ({session.user.email})
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => signOut()}
+          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Logout
+        </button>
+      </div>
+      <div className="flex justify-between items-center mb-8">
+      
         <button
           onClick={handleCreateNew}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center"
