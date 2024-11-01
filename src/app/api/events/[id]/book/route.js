@@ -12,7 +12,7 @@ export async function POST(request, context) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-console.log("user-id",session.user.id)
+
     // Make sure we have a user ID
     if (!session.user?.id) {
       console.error("No user ID in session:", session);
@@ -40,7 +40,8 @@ console.log("user-id",session.user.id)
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
-console.log("event selecte",event)
+
+    // Check seat availability
     if (event.availableSeats < seats) {
       return NextResponse.json(
         { error: "Not enough seats available" },
@@ -55,16 +56,11 @@ console.log("event selecte",event)
       seats: seats,
       createdAt: new Date(),
     });
-console.log("booking",booking)
+
     // Update event seats
-  console.log("Before update - Event available seats:", event.availableSeats);
-  event.availableSeats -= seats;
-  console.log(
-    "After subtraction - Event available seats:",
-    event.availableSeats
-  );
-  await event.save();
-  console.log("After save - Event available seats:", event.availableSeats);
+    // event.availableSeats -= seats;
+    event.bookedSeats += seats;
+    await event.save();
 
     // Return successful response with booking details
     return NextResponse.json({
@@ -76,6 +72,7 @@ console.log("booking",booking)
         createdAt: booking.createdAt,
       },
       availableSeats: event.availableSeats,
+      bookedSeats: event.bookedSeats,
     });
   } catch (error) {
     console.error("Booking error:", error);

@@ -1,7 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function EventsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("events");
   const [events, setEvents] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
@@ -13,32 +17,8 @@ export default function EventsPage() {
     success: false,
     message: "",
   });
-  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-     fetchUserSession();
-    if (activeTab === "events") {
-      fetchEvents();
-    } else {
-      fetchMyBookings();
-    }
-  }, [activeTab]);
-
-
-    const fetchUserSession = async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (!res.ok) {
-          throw new Error("Failed to fetch user session");
-        }
-        const data = await res.json();
-        setUser(data.user);
-      } catch (err) {
-        setError("Failed to fetch session data");
-      }
-    };
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/events");
@@ -55,9 +35,9 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  },[]);
 
-  const fetchMyBookings = async () => {
+const fetchMyBookings = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/bookings/my-bookings");
@@ -66,7 +46,6 @@ export default function EventsPage() {
         throw new Error(data.error || "Failed to fetch bookings");
       }
       const data = await res.json();
-      console.log("fetched-data",data)
       setMyBookings(data);
       setError("");
     } catch (err) {
@@ -75,27 +54,32 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  },[]);
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (status === "authenticated") {
+      if (activeTab === "events") {
+        fetchEvents();
+      } else {
+        fetchMyBookings();
+      }
+    }
+  }, [status, activeTab, router, fetchEvents, fetchMyBookings]);
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-      router.push("/login");
+      await signOut();
     } catch (err) {
       console.error("Logout error:", err);
     }
   };
-// console.log("Bookings",myBookings)
 
   const handleBooking = async () => {
     try {
-      // Reset booking status
       setBookingStatus({ success: false, message: "" });
 
-      // Validate input
       if (!bookingEvent?._id) {
         throw new Error("Invalid event selected");
       }
@@ -104,12 +88,17 @@ export default function EventsPage() {
         throw new Error("Please select at least 1 seat");
       }
 
+      if (seats > bookingEvent.availableSeats) {
+        throw new Error(`Only ${bookingEvent.availableSeats} seats available`);
+      }
+      const createdBy = session.user.name;
+      console.log("seatsssssssssssss", createdBy);
       const res = await fetch(`/api/events/${bookingEvent._id}/book`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ seats }),
+        body: JSON.stringify({ seats, createdBy }),
       });
 
       const data = await res.json();
@@ -118,19 +107,16 @@ export default function EventsPage() {
         throw new Error(data.error || "Failed to book event");
       }
 
-      // Success case
       setBookingStatus({
         success: true,
         message: `Successfully booked ${seats} seat${seats > 1 ? "s" : ""}!`,
       });
 
-      // Refresh data sequentially to ensure consistency
       await fetchEvents();
       if (activeTab === "bookings") {
         await fetchMyBookings();
       }
 
-      // Reset booking form
       setSeats(1);
       setBookingEvent(null);
     } catch (err) {
@@ -161,7 +147,6 @@ export default function EventsPage() {
         message: "Booking cancelled successfully",
       });
 
-      // Refresh data sequentially
       await fetchMyBookings();
       await fetchEvents();
     } catch (err) {
@@ -173,7 +158,7 @@ export default function EventsPage() {
     }
   };
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         Loading...
@@ -184,10 +169,10 @@ export default function EventsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* User Info and Logout */}
-      {user && (
+      {session?.user && (
         <div className="flex justify-between items-center mb-6">
           <div className="text-lg font-semibold">
-            Welcome, {user.name || user.email}!
+            Welcome, {session.user.name || session.user.email}!
           </div>
           <button
             onClick={handleLogout}
@@ -197,6 +182,7 @@ export default function EventsPage() {
           </button>
         </div>
       )}
+
       {/* Tabs */}
       <div className="flex mb-8 border-b">
         <button
@@ -254,7 +240,10 @@ export default function EventsPage() {
                 <p className="text-gray-600 mb-4">{event.description}</p>
                 <div className="text-sm text-gray-500 mb-4">
                   <p>Date: {new Date(event.date).toLocaleString()}</p>
-                  <p>Available Seats: {event.availableSeats}</p>
+                  <p>
+                    Available Seats: {event.availableSeats - event.bookedSeats}
+                  </p>
+                  <p>Booked Seats: {event.bookedSeats}</p>
                 </div>
                 <button
                   className={`w-full py-2 px-4 rounded font-bold ${

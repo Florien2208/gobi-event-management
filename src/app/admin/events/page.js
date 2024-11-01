@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 export default function AdminEvents() {
   const { data: session, status } = useSession();
@@ -65,7 +66,10 @@ export default function AdminEvents() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          id: selectedEvent?._id, // Add event ID for update
+        }),
       });
 
       if (!res.ok) {
@@ -146,7 +150,6 @@ export default function AdminEvents() {
         </button>
       </div>
       <div className="flex justify-between items-center mb-8">
-      
         <button
           onClick={handleCreateNew}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center"
@@ -169,7 +172,15 @@ export default function AdminEvents() {
             <p className="text-gray-600 mb-4">{event.description}</p>
             <div className="text-sm text-gray-500 mb-4">
               <p>Date: {new Date(event.date).toLocaleString()}</p>
-              <p>Available Seats: {event.availableSeats}</p>
+              <div className="flex justify-between">
+                <div>
+                  <p>Total Seats: {event.availableSeats}</p>
+                  <p>Booked Seats: {event.bookedSeats}</p>
+                  <p>
+                    Remaining Seats: {event.availableSeats - event.bookedSeats}
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button
