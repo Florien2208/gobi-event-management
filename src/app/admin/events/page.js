@@ -1,10 +1,48 @@
-// app/admin/events/page.js
 "use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Calendar,
+  Users,
+  AlertCircle,
+  LogOut,
+} from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export default function AdminEvents() {
   const { data: session, status } = useSession();
@@ -44,7 +82,14 @@ export default function AdminEvents() {
   if (status === "loading" || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        Loading...
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-slate-200 rounded w-[250px]"></div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="h-40 bg-slate-200 rounded col-span-1"></div>
+            <div className="h-40 bg-slate-200 rounded col-span-1"></div>
+            <div className="h-40 bg-slate-200 rounded col-span-1"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -69,7 +114,7 @@ export default function AdminEvents() {
         },
         body: JSON.stringify({
           ...formData,
-          id: selectedEvent?._id, // Add event ID for update
+          id: selectedEvent?._id,
         }),
       });
 
@@ -130,155 +175,178 @@ export default function AdminEvents() {
     setIsEditing(false);
     setIsModalOpen(true);
   };
-const handleLogout = async () => {
-  if (isLoggingOut) return; // Prevent multiple clicks
 
-  setIsLoggingOut(true);
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
 
-  try {
-    const result = await signOut({
-      redirect: false,
-      callbackUrl: "/login",
-    });
+    try {
+      await signOut({
+        redirect: false,
+        callbackUrl: "/login",
+      });
+      localStorage.clear();
+      setTimeout(() => {
+        router.push("/login");
+        router.refresh();
+      }, 0);
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
-    // Clear any local storage if needed
-    localStorage.clear();
-
-    // Use setTimeout to ensure state updates are complete before navigation
-    setTimeout(() => {
-      router.push("/login");
-      router.refresh();
-    }, 0);
-  } catch (error) {
-    console.error("Logout error:", error);
-  } finally {
-    setIsLoggingOut(false);
-  }
-};
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* User Information and Logout Button */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Events Management</h1>
-          {session && (
-            <p className="text-gray-600">
-              Logged in as {session.user.name} ({session.user.email})
-            </p>
-          )}
-        </div>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Logout
-        </button>
-      </div>
-      <div className="flex justify-between items-center mb-8">
-        <button
-          onClick={handleCreateNew}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center"
-        >
-          <span className="mr-2">+</span>
-          Create Event
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => (
-          <div key={event._id} className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-bold mb-2">{event.title}</h2>
-            <p className="text-gray-600 mb-4">{event.description}</p>
-            <div className="text-sm text-gray-500 mb-4">
-              <p>Date: {new Date(event.date).toLocaleString()}</p>
-              <div className="flex justify-between">
-                <div>
-                  <p>Total Seats: {event.availableSeats}</p>
-                  <p>Booked Seats: {event.bookedSeats}</p>
-                  <p>
-                    Remaining Seats: {event.availableSeats - event.bookedSeats}
-                  </p>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <Card className="mb-8">
+          <CardContent className="flex justify-between items-center py-6">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-600 font-semibold text-lg">
+                  {session.user.name?.[0] || session.user.email?.[0]}
+                </span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Events Management</h1>
+                <p className="text-gray-500">
+                  Admin: {session.user.name} ({session.user.email})
+                </p>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => handleEdit(event)}
-                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(event._id)}
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </CardContent>
+        </Card>
 
-      {/* Modal for Create/Edit */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">
-              {isEditing ? "Edit Event" : "Create New Event"}
-            </h2>
+        {/* Action Bar */}
+        <div className="mb-8">
+          <Button onClick={handleCreateNew} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Event
+          </Button>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Events Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((event) => {
+            const bookedPercentage =
+              (event.bookedSeats / event.availableSeats) * 100;
+            return (
+              <Card
+                key={event._id}
+                className="hover:shadow-lg transition-shadow"
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xl">{event.title}</CardTitle>
+                  <Badge
+                    variant={bookedPercentage >= 90 ? "destructive" : "default"}
+                  >
+                    {bookedPercentage >= 90 ? "Almost Full" : "Available"}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600">{event.description}</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Calendar className="h-4 w-4" />
+                      <span>{new Date(event.date).toLocaleString()}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Seats Booked: {event.bookedSeats}/
+                          {event.availableSeats}
+                        </span>
+                      </div>
+                      <Progress value={bookedPercentage} className="h-2" />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(event)}
+                  >
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(event._id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Create/Edit Dialog */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                {isEditing ? "Edit Event" : "Create New Event"}
+              </DialogTitle>
+            </DialogHeader>
             <form onSubmit={handleCreateOrEdit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Title
-                  </label>
-                  <input
-                    type="text"
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
                     value={formData.title}
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Description
-                  </label>
-                  <textarea
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Textarea
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
-                    rows="4"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date</label>
-                  <input
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Date</label>
+                  <Input
                     type="datetime-local"
                     value={formData.date}
                     onChange={(e) =>
                       setFormData({ ...formData, date: e.target.value })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Available Seats
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Available Seats</label>
+                  <Input
                     type="number"
                     value={formData.availableSeats}
                     onChange={(e) =>
@@ -287,58 +355,52 @@ const handleLogout = async () => {
                         availableSeats: e.target.value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
                     min="0"
                     required
                   />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <button
+              <DialogFooter>
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                >
+                </Button>
+                <Button type="submit">
                   {isEditing ? "Save Changes" : "Create Event"}
-                </button>
-              </div>
+                </Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+          </DialogContent>
+        </Dialog>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4">Delete Event</h2>
-            <p className="mb-4">
-              Are you sure you want to delete this event? This action cannot be
-              undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-              <button
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={!!showDeleteConfirm}
+          onOpenChange={() => setShowDeleteConfirm(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Event</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this event? This action cannot
+                be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-500 hover:bg-red-700"
                 onClick={() => handleDelete(showDeleteConfirm)}
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
               >
                 Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

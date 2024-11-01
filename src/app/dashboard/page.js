@@ -2,6 +2,26 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Calendar, Users, Clock, Info } from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function EventsPage() {
   const { data: session, status } = useSession();
@@ -18,6 +38,7 @@ export default function EventsPage() {
     message: "",
   });
 
+  // Fetch functions remain the same
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
@@ -35,9 +56,9 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
     }
-  },[]);
+  }, []);
 
-const fetchMyBookings = useCallback(async () => {
+  const fetchMyBookings = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/bookings/my-bookings");
@@ -54,7 +75,7 @@ const fetchMyBookings = useCallback(async () => {
     } finally {
       setLoading(false);
     }
-  },[]);
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -68,22 +89,18 @@ const fetchMyBookings = useCallback(async () => {
     }
   }, [status, activeTab, router, fetchEvents, fetchMyBookings]);
 
- const handleLogout = async () => {
-   try {
-     await signOut({
-       redirect: false,
-     });
-
-     // Clear any local storage or cookies if needed
-     localStorage.clear();
-
-     // Redirect to login page
-     router.push("/login");
-     router.refresh();
-   } catch (error) {
-     console.error("Logout error:", error);
-   }
- };
+  const handleLogout = async () => {
+    try {
+      await signOut({
+        redirect: false,
+      });
+      localStorage.clear();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   const handleBooking = async () => {
     try {
@@ -100,8 +117,8 @@ const fetchMyBookings = useCallback(async () => {
       if (seats > bookingEvent.availableSeats) {
         throw new Error(`Only ${bookingEvent.availableSeats} seats available`);
       }
+
       const createdBy = session.user.name;
-      console.log("seatsssssssssssss", createdBy);
       const res = await fetch(`/api/events/${bookingEvent._id}/book`, {
         method: "POST",
         headers: {
@@ -170,194 +187,229 @@ const fetchMyBookings = useCallback(async () => {
   if (status === "loading" || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        Loading...
+        <div className="animate-pulse flex space-x-4">
+          <div className="rounded-full bg-slate-200 h-10 w-10"></div>
+          <div className="flex-1 space-y-6 py-1">
+            <div className="h-2 bg-slate-200 rounded"></div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="h-2 bg-slate-200 rounded col-span-2"></div>
+                <div className="h-2 bg-slate-200 rounded col-span-1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* User Info and Logout */}
-      {session?.user && (
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-lg font-semibold">
-            Welcome, {session.user.name || session.user.email}!
-          </div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Logout
-          </button>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex mb-8 border-b">
-        <button
-          className={`py-2 px-4 font-medium mr-4 ${
-            activeTab === "events"
-              ? "border-b-2 border-blue-500 text-blue-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("events")}
-        >
-          Available Events
-        </button>
-        <button
-          className={`py-2 px-4 font-medium ${
-            activeTab === "bookings"
-              ? "border-b-2 border-blue-500 text-blue-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("bookings")}
-        >
-          My Bookings
-        </button>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Booking Status Display */}
-      {bookingStatus.message && (
-        <div
-          className={`${
-            bookingStatus.success
-              ? "bg-green-100 border-green-400 text-green-700"
-              : "bg-red-100 border-red-400 text-red-700"
-          } px-4 py-3 rounded mb-4 border`}
-        >
-          {bookingStatus.message}
-        </div>
-      )}
-
-      {/* Events List */}
-      {activeTab === "events" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <div
-              key={event._id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden"
-            >
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-2">{event.title}</h2>
-                <p className="text-gray-600 mb-4">{event.description}</p>
-                <div className="text-sm text-gray-500 mb-4">
-                  <p>Date: {new Date(event.date).toLocaleString()}</p>
-                  <p>
-                    Available Seats: {event.availableSeats - event.bookedSeats}
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        {session?.user && (
+          <Card className="mb-8">
+            <CardContent className="flex justify-between items-center py-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-600 font-semibold">
+                    {session.user.name?.[0] || session.user.email?.[0]}
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    Welcome, {session.user.name || session.user.email}!
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Manage your events and bookings
                   </p>
-                  <p>Booked Seats: {event.bookedSeats}</p>
-                </div>
-                <button
-                  className={`w-full py-2 px-4 rounded font-bold ${
-                    event.availableSeats < 1
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-blue-500 hover:bg-blue-700 text-white"
-                  }`}
-                  disabled={event.availableSeats < 1}
-                  onClick={() => setBookingEvent(event)}
-                >
-                  {event.availableSeats < 1 ? "Sold Out" : "Book Now"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        // My Bookings List
-        <div className="space-y-4">
-          {myBookings.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              You haven&apos;t booked any events yet.
-            </div>
-          ) : (
-            myBookings.map((booking) => (
-              <div
-                key={booking._id}
-                className="bg-white rounded-lg shadow-lg p-6"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">
-                      {booking.event?.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      {booking.event?.description}
-                    </p>
-                    <div className="text-sm text-gray-500">
-                      <p>
-                        Date: {new Date(booking.event?.date).toLocaleString()}
-                      </p>
-                      <p>Number of Seats: {booking.seats}</p>
-                      <p>
-                        Booking Date:{" "}
-                        {new Date(booking.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleCancelBooking(booking._id)}
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                  >
-                    Cancel Booking
-                  </button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      )}
+              <Button variant="destructive" onClick={handleLogout}>
+                Logout
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Booking Modal */}
-      {bookingEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">
-              Book Event: {bookingEvent.title}
-            </h2>
+        {/* Tabs Section */}
+        <Tabs
+          defaultValue={activeTab}
+          onValueChange={setActiveTab}
+          className="mb-8"
+        >
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="events">Available Events</TabsTrigger>
+            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+          </TabsList>
+
+          {/* Status Messages */}
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {bookingStatus.message && (
+            <Alert
+              variant={bookingStatus.success ? "default" : "destructive"}
+              className="mt-4"
+            >
+              <AlertDescription>{bookingStatus.message}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Events Content */}
+          <TabsContent value="events">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.map((event) => (
+                <Card
+                  key={event._id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader>
+                    <CardTitle className="flex justify-between items-start">
+                      <span>{event.title}</span>
+                      <Badge
+                        variant={
+                          event.availableSeats > 0 ? "default" : "secondary"
+                        }
+                      >
+                        {event.availableSeats > 0 ? "Available" : "Sold Out"}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-gray-600">{event.description}</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(event.date).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Users className="h-4 w-4" />
+                        <span>Available: {event.availableSeats}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock className="h-4 w-4" />
+                        <span>Booked: {event.bookedSeats}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button
+                      className="w-full"
+                      disabled={event.availableSeats < 1}
+                      onClick={() => setBookingEvent(event)}
+                    >
+                      {event.availableSeats < 1 ? "Sold Out" : "Book Now"}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Bookings Content */}
+          <TabsContent value="bookings">
             <div className="space-y-4">
-              <p>Available seats: {bookingEvent.availableSeats}</p>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Number of Seats
-                </label>
-                <input
+              {myBookings.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Info className="h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 text-center">
+                      You haven&apos;t booked any events yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                myBookings.map((booking) => (
+                  <Card key={booking._id}>
+                    <CardContent className="flex justify-between items-start py-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-xl font-bold">
+                            {booking.event?.title}
+                          </h3>
+                          <p className="text-gray-600">
+                            {booking.event?.description}
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {new Date(booking.event?.date).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Users className="h-4 w-4" />
+                            <span>Seats: {booking.seats}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Clock className="h-4 w-4" />
+                            <span>
+                              Booked:{" "}
+                              {new Date(booking.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleCancelBooking(booking._id)}
+                      >
+                        Cancel Booking
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Booking Dialog */}
+        <Dialog
+          open={!!bookingEvent}
+          onOpenChange={() => setBookingEvent(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Book Event: {bookingEvent?.title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Users className="h-4 w-4" />
+                <span>Available seats: {bookingEvent?.availableSeats}</span>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Number of Seats</label>
+                <Input
                   type="number"
                   min="1"
-                  max={bookingEvent.availableSeats}
+                  max={bookingEvent?.availableSeats}
                   value={seats}
                   onChange={(e) => setSeats(Number(e.target.value))}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
                 />
               </div>
             </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
+            <DialogFooter>
+              <Button
+                variant="outline"
                 onClick={() => {
                   setBookingEvent(null);
                   setSeats(1);
                   setBookingStatus({ success: false, message: "" });
                 }}
-                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleBooking}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Confirm Booking
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+              <Button onClick={handleBooking}>Confirm Booking</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
