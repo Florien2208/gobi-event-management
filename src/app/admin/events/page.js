@@ -22,6 +22,7 @@ export default function AdminEvents() {
     date: "",
     availableSeats: "",
   });
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -129,7 +130,31 @@ export default function AdminEvents() {
     setIsEditing(false);
     setIsModalOpen(true);
   };
+const handleLogout = async () => {
+  if (isLoggingOut) return; // Prevent multiple clicks
 
+  setIsLoggingOut(true);
+
+  try {
+    const result = await signOut({
+      redirect: false,
+      callbackUrl: "/login",
+    });
+
+    // Clear any local storage if needed
+    localStorage.clear();
+
+    // Use setTimeout to ensure state updates are complete before navigation
+    setTimeout(() => {
+      router.push("/login");
+      router.refresh();
+    }, 0);
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
   return (
     <div className="container mx-auto px-4 py-8">
       {/* User Information and Logout Button */}
@@ -143,7 +168,7 @@ export default function AdminEvents() {
           )}
         </div>
         <button
-          onClick={() => signOut()}
+          onClick={handleLogout}
           className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
         >
           Logout

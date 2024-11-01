@@ -106,6 +106,17 @@ export const authOptions = {
     error: "/login",
   },
   debug: true, // Enable debug mode in development
+  events: {
+    async signOut({ session, token }) {
+      // Perform any cleanup here
+      try {
+        // Add any additional cleanup you need
+        console.log("User signed out successfully");
+      } catch (error) {
+        console.error("Error during sign out:", error);
+      }
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);

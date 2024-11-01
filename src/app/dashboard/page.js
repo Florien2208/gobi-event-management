@@ -68,13 +68,22 @@ const fetchMyBookings = useCallback(async () => {
     }
   }, [status, activeTab, router, fetchEvents, fetchMyBookings]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
+ const handleLogout = async () => {
+   try {
+     await signOut({
+       redirect: false,
+     });
+
+     // Clear any local storage or cookies if needed
+     localStorage.clear();
+
+     // Redirect to login page
+     router.push("/login");
+     router.refresh();
+   } catch (error) {
+     console.error("Logout error:", error);
+   }
+ };
 
   const handleBooking = async () => {
     try {
