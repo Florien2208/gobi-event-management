@@ -26,7 +26,10 @@ A simple Event Management System built with Next.js for both frontend and backen
 
 ### Prerequisites
 - Node.js
-- npm or yarn
+- npm 
+### Example of registered account
+- email:mahorompakanyiflorien@gmail.com
+- Password: Florien@2024
 
 ### Installation
 
