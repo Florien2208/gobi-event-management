@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/route.js
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import dbConnect from "@/lib/mongoose";
@@ -35,19 +34,23 @@ export const authOptions = {
           throw new Error("Invalid password");
         }
 
-        return {
-          id: user._id,
+        // Convert Mongoose document to plain object and ensure _id is converted to string
+        const userObject = {
+          id: user._id.toString(),
           email: user.email,
           name: user.name,
           role: user.role,
           ...(user.role === "admin"
             ? {
-                adminFields: user.adminFields,
+                adminFields: JSON.parse(JSON.stringify(user.adminFields)),
               }
             : {
-                userFields: user.userFields,
+                userFields: JSON.parse(JSON.stringify(user.userFields)),
               }),
         };
+
+        console.log("Authorize returning user object:", userObject);
+        return userObject;
       },
     }),
   ],
@@ -56,28 +59,45 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // console.log("JWT Callback - Trigger:", trigger);
+      // console.log("JWT Callback - Incoming user:", user);
+      // console.log("JWT Callback - Current token:", token);
+
       if (user) {
+        // When signing in
+        token.id = user.id;
         token.role = user.role;
         token.name = user.name;
+        token.email = user.email;
         if (user.role === "admin") {
           token.adminFields = user.adminFields;
         } else {
           token.userFields = user.userFields;
         }
       }
+
+      // console.log("JWT Callback - Returning token:", token);
       return token;
     },
     async session({ session, token }) {
+      // console.log("Session Callback - Incoming token:", token);
+      // console.log("Session Callback - Current session:", session);
+
       if (token) {
+        session.user.id = token.id;
         session.user.role = token.role;
         session.user.name = token.name;
+        session.user.email = token.email;
+
         if (token.role === "admin") {
           session.user.adminFields = token.adminFields;
         } else {
           session.user.userFields = token.userFields;
         }
       }
+
+      // console.log("Session Callback - Returning session:", session);
       return session;
     },
   },
@@ -85,6 +105,7 @@ export const authOptions = {
     signIn: "/login",
     error: "/login",
   },
+  debug: true, // Enable debug mode in development
 };
 
 const handler = NextAuth(authOptions);

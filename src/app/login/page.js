@@ -43,7 +43,7 @@ export default function Login() {
         
         if (session?.user?.role === 'admin') {
           console.log("navigate to admin")
-          router.push("/admin/dashboard");
+          router.push("/admin/events");
         } else {
           console.log("navigate to user")
           router.push("/dashboard");
