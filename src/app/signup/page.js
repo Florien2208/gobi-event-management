@@ -155,7 +155,7 @@ export default function Signup() {
           role: formData.role,
         }),
       });
-
+console.log("response",response)
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Signup failed");
@@ -164,6 +164,7 @@ export default function Signup() {
       // Successful signup
       router.push("/login?signup=success");
     } catch (error) {
+      console.log("sssssssssssss",error)
       setErrors((prev) => ({
         ...prev,
         submit: error.message,

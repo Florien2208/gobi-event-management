@@ -33,6 +33,7 @@ async function dbConnect() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
+    console.log("error0000",e)
     cached.promise = null;
     throw e;
   }
